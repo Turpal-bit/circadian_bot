@@ -22,8 +22,10 @@ TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 1915339238 # <--- ЗАМЕНИТЕ НА СВОЙ ID (число)
 PORT = int(os.environ.get('PORT', 8080)) # Порт, который даст Render
 
-# --- Код вашего бота (без изменений) ---
+# Состояния для опроса
+
 Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8 = range(8)
+
 questions = {
     0: {
 	"text": "1. Если бы у вас была полная свобода выбора, во сколько бы вы ложились спать?",
@@ -78,7 +80,27 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE, q_in
 # --- Все ваши обработчики q1_handler, q2_handler, ... , cancel ---
 async def q1_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return await handle_answer(update, context, 0, Q2)
-# ... (и так далее для всех восьми)
+
+async def q2_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return await handle_answer(update, context, 1, Q3)
+
+async def q3_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return await handle_answer(update, context, 2, Q4)
+
+async def q4_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return await handle_answer(update, context, 3, Q5)
+
+async def q5_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return await handle_answer(update, context, 4, Q6)
+
+async def q6_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return await handle_answer(update, context, 5, Q7)
+
+async def q7_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return await handle_answer(update, context, 6, Q8)
+
+async def q8_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    return await handle_answer(update, context, 7, None)
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("Тест отменён.", reply_markup=ReplyKeyboardRemove())

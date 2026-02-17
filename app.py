@@ -109,7 +109,11 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 # Функция для создания и запуска бота в отдельном потоке
 def run_bot():
-    # Создаем приложение бота
+    import asyncio
+    # Создаем новый цикл событий для этого потока
+    loop = asyncio.set_event_loop()
+    asyncio.set_event_loop(loop)
+
     application = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(

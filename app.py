@@ -111,7 +111,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 def run_bot():
     import asyncio
     # Создаем новый цикл событий для этого потока
-    loop = asyncio.set_event_loop()
+    loop = asyncio.net_event_loop()
     asyncio.set_event_loop(loop)
 
     application = ApplicationBuilder().token(TOKEN).build()

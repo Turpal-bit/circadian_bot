@@ -127,6 +127,12 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 # ---------- СОЗДАЁМ ПРИЛОЖЕНИЕ БОТА ----------
 application = Application.builder().token(TOKEN).build()
 
+async def init_app():
+    await application.initialize()
+    logging.info("Application initialized")
+
+asyncio.run(init_app())
+
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler('start', start)],
     states={

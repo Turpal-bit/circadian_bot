@@ -16,14 +16,15 @@ from telegram.ext import (
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 1915339238 # <--- ЗАМЕНИТЕ НА СВОЙ ID
+# Токен и ID администратора (уже вставлены)
+TOKEN = "8543435743:AAFgYVdA2H5QWfH9_xuTeOLUbKrtzVQTRws"
+ADMIN_ID = 1915339238
 PORT = int(os.environ.get('PORT', 8080))
 
-# ---------- Состояния ----------
+# Состояния для опроса
 Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8 = range(8)
 
-# ---------- Словарь вопросов (ВСТАВЬТЕ СВОЙ) ----------
+# ---------- Словарь вопросов ----------
 questions = {
     0: {
         "text": "1. Если бы у вас была полная свобода выбора, во сколько бы вы ложились спать?",
@@ -45,7 +46,6 @@ questions = {
         "options": ["Утро (до 12:00)", "День (12:00–17:00)", "Вечер (17:00–22:00)", "Ночь (после 22:00)"],
         "scores": [1, 2, 3, 4],
     },
-
     4: {
         "text": "5. Как легко вы просыпаетесь утром в рабочий день?",
         "options": ["Очень легко, сам до будильника", "Довольно легко, с первым будильником", "Тяжеловато, нужно несколько сигналов", "Очень тяжело, разбитость"],
@@ -68,11 +68,7 @@ questions = {
     },
 }
 
-# ---------- ВСЕ ФУНКЦИИ-ОБРАБОТЧИКИ (ВСТАВЬТЕ ИХ СЮДА) ----------
-# Сюда нужно скопировать все функции: start, handle_answer, q1_handler ... q8_handler, cancel
-# Они должны быть точно такими же, как в вашем локальном bot.py
-# Например:
-
+# ---------- Функции-обработчики ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(
         "Привет! Этот тест определит твой циркадный хронотип.\n"
@@ -91,8 +87,79 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return Q1
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE, q_index: int, next_state: int | None) -> int:
-    # ... (ваша полная функция handle_answer)
-    pass
+    user_answer = update.message.text
+    q_data = questions[q_index]
+    valid_options = q_data["options"]
+
+    if user_answer not in valid_options:
+        await update.message.reply_text(
+            "Пожалуйста, выберите вариант из кнопок.",
+            reply_markup=ReplyKeyboardMarkup(
+                [[opt] for opt in valid_options],
+                one_time_keyboard=True,
+                resize_keyboard=True
+            )
+        )
+        return q_index
+    if 'answers' not in context.user_data:
+        context.user_data['answers'] = {}
+    idx = valid_options.index(user_answer)
+    score = q_data["scores"][idx]
+    context.user_data['answers'][f'q{q_index+1}'] = {'text': user_answer, 'score': score}
+
+    if next_state is None:
+        answers = context.user_data['answers']
+        energy_score = answers.get('q3', {}).get('score', 0) + answers.get('q6', {}).get('score', 0) + answers.get('q8', {}).get('score', 0)
+        time_score = answers.get('q1', {}).get('score', 0) + answers.get('q2', {}).get('score', 0) + answers.get('q4', {}).get('score', 0) + answers.get('q5', {}).get('score', 0) + answers.get('q7', {}).get('score', 0)
+
+        if energy_score <= 6:
+            chronotype = "Колибри"
+            description = "Вы очень активны, спите мало и редко устаёте. Не забывайте отдыхать!"
+        else:
+            if time_score <= 9:
+                chronotype = "Жаворонок"
+                description = "Вы любите рано вставать, пик активности — утро. Планируйте важное на первую половину дня."
+            elif time_score <= 14:
+                chronotype = "Голубь"
+                description = "Ваш пик — днём. Хорошо адаптируетесь, но соблюдайте режим."
+            else:
+                chronotype = "Сова"
+                description = "Активны вечером/ночью, утром тяжело. Планируйте сложные задачи на вечер."
+
+       await update.message.reply_text(
+           f" **Ваш хронотип: {chronotype}**\n\n{description}",
+           reply_markup=ReplyKeyboardRemove(),
+           parse_mode='Markdown'
+       )
+
+       user = update.effective_user
+       admin_msg = (
+           f"Новый результат:\n"
+           f"Пользователь: {user.full_name} (@{user.username})\n"
+           f"ID: {user.id}\n"
+           f"Хронотип: {chronotype}\n"
+           f"Баллы энергии: {energy_score}\n"
+           f"Баллы времени: {time_score}\n"
+           f"Детали: {answers}"
+      )
+      try:
+         await context.bot.send_message(chat_id=ADMIN_ID, text=admin_msg)
+      except Exception as e:
+          logging.error(f"Не удалось отправить админу: {e}")
+
+      context.user_data.clear()
+      return ConversationHandler.END
+  else:
+      next_q = questions[next_state]
+      await update.message.reply_text(
+          next_q["text"],
+          reply_markup=ReplyKeyboardMarkup(
+              [[opt] for opt in next_q["options"]],
+              one_time_keyboard=True,
+              resize_keyboard=True
+          )
+      )
+      return next_state
 
 async def q1_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return await handle_answer(update, context, 0, Q2)
@@ -122,16 +189,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("Тест отменён.", reply_markup=ReplyKeyboardRemove())
     context.user_data.clear()
     return ConversationHandler.END
-# ---------- КОНЕЦ ФУНКЦИЙ ----------
 
 # ---------- СОЗДАЁМ ПРИЛОЖЕНИЕ БОТА ----------
+
 application = Application.builder().token(TOKEN).build()
-
-async def init_app():
-    await application.initialize()
-    logging.info("Application initialized")
-
-asyncio.run(init_app())
 
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler('start', start)],
@@ -144,18 +205,24 @@ conv_handler = ConversationHandler(
         Q6: [MessageHandler(filters.TEXT & ~filters.COMMAND, q6_handler)],
         Q7: [MessageHandler(filters.TEXT & ~filters.COMMAND, q7_handler)],
         Q8: [MessageHandler(filters.TEXT & ~filters.COMMAND, q8_handler)],
-   },
-   fallbacks=[CommandHandler('cancel', cancel)],
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
 )
 
 application.add_handler(conv_handler)
 
-# ---------- FLASK ПРИЛОЖЕНИЕ ДЛЯ ВЕБХУКА ----------
+async def init_app():
+    await application.initialize()
+    logging.info("✅ Application initialized")
+
+asyncio.run(init_app())
+
+# ---------- FLASK ПРИЛОЖЕНИЕ ----------
+
 app = Flask(__name__)
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    """Telegram будет отправлять сюда обновления"""
     update = Update.de_json(request.get_json(), application.bot)
     asyncio.run(application.process_update(update))
     return 'OK', 200

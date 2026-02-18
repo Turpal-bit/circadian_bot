@@ -101,6 +101,7 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE, q_in
             )
         )
         return q_index
+    
     if 'answers' not in context.user_data:
         context.user_data['answers'] = {}
     idx = valid_options.index(user_answer)

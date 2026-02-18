@@ -127,10 +127,10 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE, q_in
                 chronotype = "Сова"
                 description = "Активны вечером/ночью, утром тяжело. Планируйте сложные задачи на вечер."
 
-       await update.message.reply_text(
-           f" **Ваш хронотип: {chronotype}**\n\n{description}",
-           reply_markup=ReplyKeyboardRemove(),
-           parse_mode='Markdown'
+        await update.message.reply_text(
+            f" **Ваш хронотип: {chronotype}**\n\n{description}",
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode='Markdown'
        )
 
        user = update.effective_user
@@ -143,8 +143,9 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE, q_in
            f"Баллы времени: {time_score}\n"
            f"Детали: {answers}"
       )
+      
       try:
-         await context.bot.send_message(chat_id=ADMIN_ID, text=admin_msg)
+          await context.bot.send_message(chat_id=ADMIN_ID, text=admin_msg)
       except Exception as e:
           logging.error(f"Не удалось отправить админу: {e}")
 
